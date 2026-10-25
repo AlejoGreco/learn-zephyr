@@ -89,3 +89,63 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 # Entradas
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
+
+## e00.1 — Dependencias de host y west
+
+**Fecha:** 2026-10-25 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** n/a (workspace sin inicializar, se hace en 0.2) · **Commit:** `e00.1: <mensaje>` (<hash corto>)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Instalar las dependencias de host, west y entorno de python funcionando. 
+Checkpoint: CLI de west y cmake responden al comando de version
+
+### Lectura dirigida
+- **Qué problema resuelve:** provisionamiento del framework, administracion de sus paquetes y modulos, herramientas de desarrollo, flasheo y depuracion.
+Desacopla hardware, de drivers, librerias e IDE, utilizando build system nativos de C y cross compilation
+- **APIs / opciones centrales (2–3):** CLI west: 
+    - Compilacion desde cero para correr en host: `$ west build -p always -b native_sim <ruta/app>`
+    - Ejecucion de binario nativo de host: `$ west build -t run`
+    - Grabar en un microcontrolador fisico el binario generado: `$ west flash`
+- **Limitación que menciona la doc:** siempre activar el entorno virtual de python antes de arrancar una sesion de trabajo
+- **Fuentes leídas:** 
+    - [Cuaderno propio NotebookLM](https://notebook.google.com/notebook/f26a63d8-ac5b-4c68-923d-04f407143172)
+    - [Getting Started de Zephyr](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+
+### Qué hice
+
+```bash
+$ sudo apt install --no-install-recommends -y git cmake ninja-build gperf ccache dfu-util device-tree-compiler wget python3-dev python3-venv python3-pip make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
+
+$ mkdir ~/zephyrproject
+$ cd ~/zephyrproject/
+
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+
+$ pip install --upgrade pip
+$ pip install west
+```
+
+Archivos tocados: `-`
+
+### Resultado
+Todo instalado con normalidad 
+
+```bash
+$ west --version
+West version: v1.5.0
+
+$ cmake --version
+cmake version 3.28.3
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+```
+
+### Evidencia
+- [00.1-entorno.md](../docs/evidencias/e00/00.1-entorno.md)
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Instalacion del entorno y varios conceptos del ecosistema (build system, cross compiler, virtual env de python)
+- **Pendiente:** Instalacion de SDK, requiere `$ west init` que se pide en el 0.2 y luego `$ west sdk install`
+
