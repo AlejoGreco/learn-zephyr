@@ -89,21 +89,81 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 # Entradas
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
+## e00.2 — Inicializar workspace y tooling
+
+**Fecha:** 2026-10-25 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.2: Workspace west inicializado y HAL de Espressif presente` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Inicializar el workspace y herramientas de python usadas por west
+Checkpoint: HAL de Espressif instalado
+
+### Qué hice
+
+```bash
+$ cd ~/zephyrproject
+$ west init -m https://github.com/zephyrproject-rtos/zephyr --mr main . # --mr main sigue el branch main y no un tag (reproducibilidad de 0.7)
+$ west update
+
+$ west packages pip --install
+$ west zephyr-export
+
+$ cd ~/zephyrproject/zephyr
+$ west sdk install
+```
+
+Archivos tocados: `-`
+
+### Resultado
+`west init`, `west update`, `west packages pip --install`, `west zephyr-export` y `west sdk install` terminaron sin errores (`All done.` al final de la instalación del SDK).
+
+```bash
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ west list | grep hal_espressif
+hal_espressif modules/hal/espressif        cc81db00233af6020f2fea9fbb0d0098fb3d0d86 https://github.com/zephyrproject-rtos/hal_espressif
+
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ cat VERSION
+VERSION_MAJOR = 4
+VERSION_MINOR = 5
+PATCHLEVEL = 0
+VERSION_TWEAK = 0
+EXTRAVERSION = rc3
+
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ git rev-parse HEAD
+bc5d59d1b6657cfeef30124b818c8fbd69da68ac
+
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ git describe --tags --always
+v4.5.0-rc3-10-gbc5d59d1b66
+```
+
+```bash
+$ cat ~/zephyr-sdk-1.0.1/sdk_version
+1.0.1
+```
+
+Zephyr SDK instalado: **1.0.1** (`~/zephyr-sdk-1.0.1`).
+
+### Evidencia
+- [00.2-workspace.md](evidencias/e00/00.2-workspace.md)
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** zephyr es el manifest repository y no un módulo más, por eso la versión en uso se obtiene dentro de `zephyr/` con `cat VERSION` y `git describe --tags --always`.
+- **Pendiente:** 0.3 (`west blobs fetch hal_espressif`) y 0.4 (`hello_world` en `native_sim`).
 
 ## e00.1 — Dependencias de host y west
 
 **Fecha:** 2026-10-25 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** n/a (workspace sin inicializar, se hace en 0.2) · **Commit:** `e00.1: <mensaje>` (<hash corto>)
+**Zephyr:** n/a (workspace sin inicializar, se hace en 0.2) · **Commit:** `e00.1: Instalacion de host deps y west` (b3b9240)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
-Instalar las dependencias de host, west y entorno de python funcionando. 
+Instalar las dependencias de host, west y entorno de python funcionando.
 Checkpoint: CLI de west y cmake responden al comando de version
 
 ### Lectura dirigida
 - **Qué problema resuelve:** provisionamiento del framework, administracion de sus paquetes y modulos, herramientas de desarrollo, flasheo y depuracion.
 Desacopla hardware, de drivers, librerias e IDE, utilizando build system nativos de C y cross compilation
-- **APIs / opciones centrales (2–3):** CLI west: 
+- **APIs / opciones centrales (2–3):** CLI west:
     - Compilacion desde cero para correr en host: `$ west build -p always -b native_sim <ruta/app>`
     - Ejecucion de binario nativo de host: `$ west build -t run`
     - Grabar en un microcontrolador fisico el binario generado: `$ west flash`
@@ -143,9 +203,8 @@ CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
 ### Evidencia
-- [00.1-entorno.md](../docs/evidencias/e00/00.1-entorno.md)
+- [00.1-entorno.md](evidencias/e00/00.1-entorno.md)
 
 ### Qué aprendí y pendiente
 - **Aprendizaje:** Instalacion del entorno y varios conceptos del ecosistema (build system, cross compiler, virtual env de python)
-- **Pendiente:** Instalacion de SDK, requiere `$ west init` que se pide en el 0.2 y luego `$ west sdk install`
-
+- **Pendiente:** Instalacion de SDK, requiere `$ west init` que se pide en el 0.2 y luego `$ west sdk install` (resuelto en e00.2, SDK 1.0.1)
