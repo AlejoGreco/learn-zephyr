@@ -89,10 +89,54 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 # Entradas
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
+
+## e00.3 — Blobs de Espressif
+
+**Fecha:** 2026-10-26 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.3: Descarga de blobs de Espressif` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Descargar los binarios de Espressif. Por que son necesarios? Para el uso de RF (WiFi, BLE)
+Checkpoint: Blobs descargados
+
+### Qué hice
+
+```bash
+$ cd ~/zephyrproject
+
+$ source .venv/bin/activate
+
+$ west blobs fetch hal_espressif
+```
+
+Archivos tocados: `-`
+
+### Resultado
+Ahora se puede usar las funciones de RF: WiFi y BLE
+A significa presente (M es fallo de hash y D es ausente).
+
+```bash
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject$ west blobs list hal_espressif
+hal_espressif A lib/esp32c5/libble_app.a lib /home/uki/zephyrproject/modules/hal/espressif/zephyr/blobs/lib/esp32c5/libble_app.a
+
+...
+...
+
+hal_espressif A lib/esp32s3/libcoexist.a lib /home/uki/zephyrproject/modules/hal/espressif/zephyr/blobs/lib/esp32s3/libcoexist.a
+```
+
+### Evidencia
+- [00.3-blobs.md](evidencias/e00/00.3-blobs.md)
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Siempre activar el entorno de python venv, si no west no existe. Cada vez que se hace un `$ west update` se debe descargar los blobs porque al no estar en el repositorio del modulo `hal_espressif` no se sincroniza automaticamente `west update`. 
+- **Pendiente:** 0.4 (`hello_world` en `native_sim`).
+
 ## e00.2 — Inicializar workspace y tooling
 
 **Fecha:** 2026-10-25 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.2: Workspace west inicializado y HAL de Espressif presente` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.2: Workspace west inicializado y HAL de Espressif presente` (5a1c4c2)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
