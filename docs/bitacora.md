@@ -90,10 +90,50 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e00.4 — Compilar hello world en native_sim
+
+**Fecha:** 2026-10-28 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.4: Compilar y correr hello world en native_sim` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Primera compilacion en zephyr. Se compila un ejemplo en placa native_sim que corre en el host
+Checkpoint: Salida de consola con saludo y nombre de la placa
+
+### Qué hice
+
+```bash
+$ cd ~/zephyrproject/zephyr
+
+$ west build -p always -b native_sim samples/hello_world/
+
+$ west build -t run
+```
+
+Archivos tocados: `-`
+
+### Resultado
+Compilacion y ejecucion exitosa del ejemplo, pudiendo visualizar la salida por consola
+
+```bash
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ west build -t run
+-- west build: running target run
+[2/3] cd /home/uki/zephyrproject/zephyr/build && /home/uki/zephyrproject/zephyr/build/zephyr/zephyr.exe
+*** Booting Zephyr OS build v4.5.0-rc3-10-gbc5d59d1b665 ***
+Hello World! native_sim/native
+```
+
+### Evidencia
+- [00.4-native_sim.md](evidencias/e00/00.4-native_sim.md)
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Native_sim es una plataforma donde se compila zephyr y la aplicacion con el tooling de host. Genera un binario standar ejecutable desde la pc que permite testear y depurar con herramientas de host facilmente.
+- **Pendiente:** 0.5 (`hello_world` en placa real `esp32s3_devkitc/esp32s3/procpu`).
+
 ## e00.3 — Blobs de Espressif
 
 **Fecha:** 2026-10-26 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.3: Descarga de blobs de Espressif` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.3: Descarga de blobs de Espressif` (75acaba)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
