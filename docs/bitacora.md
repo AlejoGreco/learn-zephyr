@@ -90,10 +90,82 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e00.5 — Compilar hello world en target real
+
+**Fecha:** 2026-11-01 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.5: Compilar y correr hello world en target real` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Compilar y flashear `samples/hello_world` en la placa real (esp32s3_devkitc/esp32s3/procpu) y monitorear la consola desde el host.
+Checkpoint: Salida de consola con saludo y nombre de la placa
+
+### Qué hice
+
+```bash
+$ cd ~/zephyrproject/zephyr
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world/
+
+$ west flash
+$ west espressif monitor -p /dev/ttyUSB0
+
+...
+...
+
+*** Booting Zephyr OS build v4.5.0-rc3-10-gbc5d59d1b665 ***
+Hello World! esp32s3_devkitc/esp32s3/procpu
+```
+
+Archivos tocados: `-`
+
+### Resultado
+Compilacion y ejecucion exitosa del ejemplo, pudiendo visualizar la salida por consola desde el monitor
+
+```bash
+(.venv) uki@uki-HP-Laptop-15-dy2xxx:~/zephyrproject/zephyr$ west espressif monitor -p /dev/ttyUSB0
+--- idf_monitor on /dev/ttyUSB0 115200 ---
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x18 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+Octal Flash Mode Enabled
+For OPI Flash, Use Default Flash Boot Mode
+
+...
+...
+
+*** Booting Zephyr OS build v4.5.0-rc3-10-gbc5d59d1b665 ***
+Hello World! esp32s3_devkitc/esp32s3/procpu
+```
+
+### Evidencia
+- [00.5-target_real.md](evidencias/e00/00.5-target_real.md)
+
+### Problemas y diagnóstico
+- **Síntoma:** al enchufar la placa no aparecía en `lsusb` ni `/dev/ttyACM*`/`/dev/ttyUSB*`. `journalctl -k` mostraba:
+  `usb 1-1: device descriptor read/64, error -71` y `usb usb1-port1: unable to enumerate USB device`.
+- **Hipótesis descartadas:** puerto de la placa (falló igual en `UART` y en `USB`) y puerto de la PC (`port1` y `port2`). Drivers, permisos y Zephyr no aplican: el fallo ocurre antes de cargar drivers.
+- **Causa raíz:** el cable. Con otro cable la placa enumeró de inmediato.
+- **Arreglo:** cambiar el cable por uno que transfiera datos.
+- **Método para la próxima vez:** `journalctl -k -f` mientras se enchufa. `error -71` = problema eléctrico/de protocolo del bus (cable, puerto), no de software. Ver `lsusb` y `ls -l /dev/serial/by-id/`.
+- **Advertencias en el arranque (no resueltas):** el bootloader imprime `SHA-256 comparison failed ... Attempting to boot anyway` y `Detected size(32768k) larger than the size in the binary image header(8192k)`. Arranca igual. El build dijo `SHA256 digest is not appended`, lo que encaja con el hash esperado de ceros; es una hipótesis, no la verifiqué.
+
+### Particularidades de la placa
+- **Dos puertos USB:** `USB` (nativo, Espressif USB-Serial/JTAG, `303a:1001`, `/dev/ttyACM0`) y `UART` (Silicon Labs CP2102N, `10c4:ea60`, `/dev/ttyUSB0`).
+- **Consola:** `zephyr,console = &uart0` en `esp32s3_devkitc_procpu.dts` y `CONFIG_ESP_CONSOLE_UART_NUM=0`, por eso la salida de la aplicación sale por el puerto `UART`. El bootloader sí se ve por el puerto `USB`.
+- **Flasheo:** `west flash` autoseleccionó `/dev/ttyACM0` (puerto `USB`).
+- **`--reset-type watchdog-reset`:** no hizo falta. `west flash` normal reinició y arrancó solo.
+- Los números `ttyACM*`/`ttyUSB*` pueden cambiar entre conexiones; `/dev/serial/by-id/` es estable.
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** el puerto `USB` sirve para flashear, y cuando Zephyr toma el control los mensajes de la aplicación salen por `UART`. Necesito ambos puertos conectados para flashear y ver el hello world, y especificar con `-p /dev/ttyUSB0` el puerto del monitor. Ante un error de enumeración USB, lo primero a descartar es el cable.
+- **Pendiente:** 0.6 (`hello_world` en ambos targets desde directorio local, fuera del árbol de Zephyr). Decidir si investigo las advertencias de SHA-256 y tamaño de flash.
+
 ## e00.4 — Compilar hello world en native_sim
 
-**Fecha:** 2026-10-28 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.4: Compilar y correr hello world en native_sim` (-)
+**Fecha:** 2026-10-28 · **Sesiones:** 1 · **Target:** native_sim
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.4: Compilar y correr hello world en native_sim` (4ae5857)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
