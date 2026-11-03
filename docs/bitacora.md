@@ -90,10 +90,76 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e00.6 — Compilar hello world como Out of Tree
+
+**Fecha:** 2026-11-03 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.6: Hello world como app out of tree` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Compilar y flashear `samples/hello_world` en ambos targets desde un directorio fuera del workspace de zephyr
+Checkpoint: Salida de consola con saludo propio y nombre de la placa para ambos targets
+
+### Qué hice
+
+```bash
+$ cp -r ~/zephyrproject/zephyr/samples/hello_world/ ./etapas/e00-entorno/
+$ export ZEPHYR_BASE=~/zephyrproject/zephyr
+
+# Compilacion y flasheo en native_sim
+$ west build -p always -b native_sim ./etapas/e00-entorno/hello_world/
+$ west build -t run
+-- west build: running target run
+[2/3] cd /home/uki/Documentos/codigos/learn-zephyr/build && /home/uki/Documentos/codigos/learn-zephyr/build/zephyr/zephyr.exe
+*** Booting Zephyr OS build v4.5.0-rc3-10-gbc5d59d1b665 ***
+Hello World desde mi código! native_sim/native
+
+...
+
+# Compilacion y flaseo en esp32s3_devkitc/esp32s3/procpu
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e00-entorno/hello_world/
+$ west flash
+$ west espressif monitor -p /dev/ttyUSB0
+
+...
+
+*** Booting Zephyr OS build v4.5.0-rc3-10-gbc5d59d1b665 ***
+Hello World desde mi código! esp32s3_devkitc/esp32s3/procpu
+```
+
+Archivos tocados: `~/Documentos/codigos/learn-zephyr/etapas/e00-entorno/hello_world/*`
+
+### Resultado
+Compilacion y ejecucion exitosa del ejemplo, pudiendo visualizar la salida por consola desde el monitor
+para ambos targets
+
+### Evidencia
+- [00.6-out_of_tree.md](evidencias/e00/00.6-out_of_tree.md)
+
+### Problemas y diagnóstico
+- **Síntoma:** no pude compilar desde mi directorio
+```bash
+  usage: west [-h] [-z ZEPHYR_BASE] [-v] [-q] [-V] <command> ...
+  west: unknown command "build"; do you need to run this inside a workspace?.
+```
+- **Causa raíz:** west no encontraba el comando build por que estaba siendo ejecutado desde fuera de un workspace
+- **Arreglo:** definir la variable de entorno `ZEPHYR_BASE` -> asi busca ahi el directorio `.west/` y por ende detecta el workspace
+- **Método para la próxima vez:** lanzar `source ~/zephyrproject/zephyr/zephyr-env.sh` luego de activar el entorno virtual para exportar `ZEPHYR_BASE`.
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** tres tipos de app segun donde se ubique el repositorio de la app respecto el repositorio de zephyr. **Repository app** (dentro de `~/zephyrproject/zephyr/`) - **Workspace app** (dentro de west workspace pero fuera de `~/zephyrproject/zephyr/`)- **Freestanding app** (fuera de west).
+
+> - `west zephyr-export` es para que CMake encuentre Zephyr por su cuenta.
+> - `ZEPHYR_BASE` es para West encuentre el workspace cuando corre fuera del mismo.
+>
+> Lo busca subiendo desde el directorio actual hasta un `.west`y sino subiendo desde `ZEPHYR_BASE`
+
+- **Pendiente:** 0.7 (crear archivo para reproduccion del entorno con versiones exactas de cada herramienta)
+
 ## e00.5 — Compilar hello world en target real
 
 **Fecha:** 2026-11-01 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.5: Compilar y correr hello world en target real` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.5: Compilar y correr hello world en target real` (-)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
@@ -165,7 +231,7 @@ Hello World! esp32s3_devkitc/esp32s3/procpu
 ## e00.4 — Compilar hello world en native_sim
 
 **Fecha:** 2026-10-28 · **Sesiones:** 1 · **Target:** native_sim
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.4: Compilar y correr hello world en native_sim` (4ae5857)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.4: Compilar y correr hello world en native_sim` (4ae5857)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
@@ -205,7 +271,7 @@ Hello World! native_sim/native
 ## e00.3 — Blobs de Espressif
 
 **Fecha:** 2026-10-26 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.3: Descarga de blobs de Espressif` (75acaba)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.3: Descarga de blobs de Espressif` (75acaba)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
@@ -248,7 +314,7 @@ hal_espressif A lib/esp32s3/libcoexist.a lib /home/uki/zephyrproject/modules/hal
 ## e00.2 — Inicializar workspace y tooling
 
 **Fecha:** 2026-10-25 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e00.2: Workspace west inicializado y HAL de Espressif presente` (5a1c4c2)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.2: Workspace west inicializado y HAL de Espressif presente` (5a1c4c2)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
