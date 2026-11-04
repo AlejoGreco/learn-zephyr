@@ -90,10 +90,54 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e00.7 — Documentar el entorno (`docs/setup.md`)
+
+**Fecha:** 2026-11-03 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e00.7: setup.md para reproducir el entorno` (-)
+**Estado:** 🟡 parcial (documento escrito, reproducción desde cero sin probar)
+
+### Objetivo
+Escribir `docs/setup.md` con comandos exactos, versiones y el commit de Zephyr en uso.
+Checkpoint: otra persona podría reproducir el entorno.
+
+### Qué hice
+Redacté `docs/setup.md` a partir de las evidencias 00.1 a 00.6 y de consultas de solo lectura al
+entorno real para completar las versiones. No compilé ni flasheé nada en este micro-paso.
+
+```bash
+$ west --version; west list zephyr; west list hal_espressif
+$ cd ~/zephyrproject/zephyr && git rev-parse HEAD && git describe --tags --always && cat VERSION
+$ cat ~/zephyr-sdk-1.0.1/sdk_version
+$ python3 --version; pip --version; pip freeze
+$ cmake --version; ninja --version; dtc --version; gcc --version
+$ dpkg-query -W -f='${Package} ${Version}\n' <paquetes apt de 0.1>
+$ lsb_release -d; uname -r; id -nG
+```
+
+Archivos tocados: `docs/setup.md`, `docs/bitacora.md`
+
+### Resultado
+`setup.md` cubre: tabla de versiones, dependencias apt, venv y west, workspace y SDK, fijado del
+commit de Zephyr, blobs, variables de sesión (`ZEPHYR_BASE`), build/run/flash en ambos targets,
+particularidades de la placa, permisos (`dialout`) y `pip freeze` completo (179 paquetes).
+
+### Evidencia
+- [setup.md](setup.md) — el entregable
+- Las versiones salen de [00.1](evidencias/e00/00.1-entorno.md) a [00.6](evidencias/e00/00.6-out_of_tree.md) y de las consultas listadas arriba (no guardadas como archivo).
+
+### Problemas y diagnóstico
+- **Hallazgo:** `west init --mr main` sigue una rama que se mueve; repetir los comandos hoy no da el mismo árbol. `west list zephyr` muestra `HEAD` (el manifest repo no tiene rev fija), por eso el commit se obtiene con `git rev-parse HEAD` dentro de `zephyr/`.
+- **Arreglo:** `setup.md` indica `git checkout <commit>` en `zephyr/` antes de `west update`.
+- **Sin verificar:** ese procedimiento de fijado no lo corrí. Tampoco hay evidencia de cuándo se agregó el usuario al grupo `dialout`.
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** reproducibilidad real = versión de cada herramienta + commit exacto de Zephyr + lista de paquetes Python (las dependencias de Zephyr no están pineadas con `==`).
+- **Pendiente:** probar `setup.md` en un directorio/usuario limpio para pasar el estado a ✅; decidir si investigo las advertencias de SHA-256/tamaño de flash (arrastrado de 0.5); 0.8 (opcional, `west debug`).
+
 ## e00.6 — Compilar hello world como Out of Tree
 
 **Fecha:** 2026-11-03 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.6: Hello world como app out of tree` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.6: Hello world como app out of tree` (14d95b9)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
@@ -159,7 +203,7 @@ para ambos targets
 ## e00.5 — Compilar hello world en target real
 
 **Fecha:** 2026-11-01 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.5: Compilar y correr hello world en target real` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e00.5: Compilar y correr hello world en target real` (83bef76)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
