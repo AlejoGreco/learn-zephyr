@@ -294,7 +294,7 @@ Copiala a tu `README.md`. La columna **Requiere** te dice qué podés empezar ho
 
 | # | Etapa | Carril | Requiere | Dónde | Estado |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Entorno, west y toolchain | tronco | — | ambos | ⬜ |
+| 0 | Entorno, west y toolchain | tronco | — | ambos | ✅ |
 | 1 | Anatomía de la app y build system | tronco | E0 | ambos | ⬜ |
 | 2 | Kconfig | tronco | E1 | ambos | ⬜ |
 | 3 | Devicetree | tronco | E1 | ambos | ⬜ |

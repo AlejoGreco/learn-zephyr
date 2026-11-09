@@ -90,10 +90,50 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## Defensa e00
+*Respondida el 2026-11-09, sin consultar documentación ni notas.*
+
+**1. ¿Qué diferencia hay entre el repo `zephyr` y el workspace de west?**
+
+Respuesta:
+### Zephyr
+Es un repositorio ubicado *dentro* del west workspace, cuyo principal proposito es proveer el codigo fuente del kernel del RTOS y las reglas de compilacion con sus scripts auxiliares.
+Ademas contiene drivers de dispositivos, descripcion de arquitectura de procesadores, subsistemas, test y ejemplos.
+
+### West workspace
+Es el `top dir` (directorio, no repositorio) del ecosistema y alberga la config de west, el repositorio de zephyr, librerias de terceros y HALs de fabricantes en `modules/`, herramientas en `/tools` y bootloaders como mcuBoot en `bootloader/`.
+Se encarga de coordinar todos estos repositorios y sincronizar con sus versiones correctas para lograr una compilacion coherente
+
+El manifest repository es aquel que contiene el archivo `west.yml` en su raiz y fija que modulos y versiones requiere el ecosisma, los cuales son sincronizados con `west update`.
+El workspace es definido con el directorio oculto `.west` donde se aloja ademas la config de west
+
+**2. ¿Por qué Espressif distribuye los blobs de RF por separado y qué implica para tu proyecto?**
+
+Respuesta:
+
+Los blobs son archivos binarios ya compilados que en este caso Espressif distribuye empaquetado. Habilitan el uso de RF, tanto WiFi como bluetooth. No estan como codigo fuente en el repo del hal porque se considera ventaja comercial de la empresa y porque al tener certificaciones de RF sobre su SOC, es mas facil mantenerlas si el codigo certificado no es modificable por el usuario final. En la practica, cada vez que se hace un west update -> hay que repetir la descarga de los blobs a demanda con `west blobs fetch` o sus funcionalidades asociadas pueden dejar de funcionar o tener errores de compilacion o linker por simbolos no definidos que cambiaron.
+
+**3. ¿Qué pasa si no borrás `build/` tras cambiar `prj.conf`?**
+
+Respuesta:
+
+Tus cambios en el proj.conf pueden no impactarse, dado que en `/build` se guarda una cache de CMake y de .config que es el resultado de la consolidacion final jerarquica de todas las reglas Kconfig (tu app, la placa, valores por defecto, etc).
+Una forma de evitar este problema es, a la hora de compilar, utilizar la opcion `-p always` pero solo cuando se se cambia de board, de app u opciones de prj.conf. No es necesario para cambio en el codigo fuente del proyecto y con `-p auto` puede detectar cuando se requiere un borrado de la misma o hacer compilacion incremental
+
+#### Autoevaluación
+| Pregunta | ¿Respondida correctamente? | Qué me faltó |
+| --- | --- | --- |
+| 1 | sí | Falta decir que `zephyr` es el manifest repository de *este* workspace (`west init -m`)|
+| 2 | parcial | "Ventaja comercial" y "certificaciones de RF" están afirmados sin fuente: son hipótesis, no hechos. Falta el motivo documentado (licencia de los binarios distinta a la del árbol de Zephyr). Lo de "símbolos no definidos tras `west update`" es plausible pero no lo reprodujiste. |
+| 3 | parcial | La idea central es correcta, pero la afirmación "los cambios de `prj.conf` pueden no impactarse" es imprecisa y no está probada. Falta distinguir qué detecta CMake solo y qué no (p. ej. archivos nuevos como `boards/*.conf` u overlays, cambio de board/app con el mismo `build/`). |
+
+**Resultado:** ✅ aprobada (1 sí + 2 parciales; las correcciones de 2 y 3 quedan como pendiente)
+**Dudas que quedaron:** fuente documentada del motivo de los blobs; experimento para la pregunta 3 (cambiar `prj.conf` sin `-p always` y comprobar en `build/zephyr/.config`).
+
 ## e00.7 — Documentar el entorno (`docs/setup.md`)
 
 **Fecha:** 2026-11-03 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e00.7: setup.md para reproducir el entorno` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e00.7: setup.md para reproducir el entorno` (0b372b4)
 **Estado:** 🟡 parcial (documento escrito, reproducción desde cero sin probar)
 
 ### Objetivo
