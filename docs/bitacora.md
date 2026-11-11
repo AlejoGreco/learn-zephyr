@@ -90,6 +90,65 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.1 — Construir app desde cero
+
+**Fecha:** 2026-11-10 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.1: app layout desde cero` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Crear una app con 2 archivos fuentes y un header file. Modificar cmake file en consecuencia
+Checkpoint: la app compila para ambas placas
+
+### Lectura dirigida
+- **Qué problema resuelve:** compilacion basada en la aplicacion, zephyr se recompila con tu app para lograr el binario con huella de flash mas pequeña segun tu configuracion. Desacopla app de la placa, biblotecas y arquitectura del soc, permitiendo personalizar configuraciones y librerias utilizadas sin tocar el framework ni el RTOS.
+- **APIs / opciones centrales (2–3):** CMakeLists.txt:
+    - Vincular el build system de tu app con el de zephyr: `find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})`
+    - Agregar directorios de busqueda de header files: `target_include_directories(app PRIVATE include)`
+    - Agregar fuentes a la compilacion: `target_sources(app PRIVATE src/main.c src/saludos.c)`
+- **Limitación que menciona la doc:** 
+    - Orden de las llamadas en CMakeLists.txt: project() y target_sources(app ...) deben ir después de find_package(Zephyr). project() va después para no interferir con project(Zephyr-Kernel), y app es un target que define find_package().
+    - El build system recompila solo lo que cree afectado por los cambios, y a veces falla y no recompila archivos necesarios. En ese caso hay que forzar una compilación desde cero (west build -p always). Es lo que me pasó al cambiar de app
+- **Fuentes leídas:** 
+    - [Cuaderno propio NotebookLM](https://notebook.google.com/notebook/f26a63d8-ac5b-4c68-923d-04f407143172)
+
+### Qué hice
+
+En primer lugar cree el `CMakeLists.txt`, procurando la vinculacion de mi app con zephyr a traves de `find_package()` e incluir en el target lib de zephyr tanto los fuentes con `target_sources()`, como los directorios de busqueda de headers files `target_include_directories()`.
+
+En segundo lugar cree el `prj.conf` para habilitar la escritura por consola (libreria `printk`) en el proyecto, por lo que es necesario habilitar un paquete de software a traves de kconfig.
+
+Luego cree los fuentes en `src/*` con el punto de entrada de la app (`main.c`) y un modulo para realizar saludos (`saludos.c`). Finalmente cree el header file para el modulo de saludos en `include/saludos.h`.
+
+Archivos tocados: `etapas/e01-app-layout/`
+
+### Resultado
+Se observo el saludo en la consola para ambas placas, por lo que se pudo comprobar el correcto funcionamiento del `CMakeLists.txt` y `prj.conf`
+
+### Evidencia
+- [01.1-crear-app.md](/docs/evidencias/e01/01.1-crear-app.md) — el entregable
+
+### Problemas y diagnóstico
+- **Síntoma:** `west build` se negó a compilar:
+
+```bash
+$ west build -b native_sim etapas/e01-app-layout/
+ERROR: Build directory "/home/uki/Documentos/codigos/learn-zephyr/build" is for application "/home/uki/Documentos/codigos/learn-zephyr/etapas/e00-entorno/hello_world", but source directory "/home/uki/Documentos/codigos/learn-zephyr/etapas/e01-app-layout" was specified; please clean it, use --pristine, or use --build-dir to set another build directory
+FATAL ERROR: refusing to proceed without --force due to above error
+```
+
+- **Causa raíz:** `build/` quedó configurado para la app de e00 (`hello_world`) y west no permite reutilizarlo para otra aplicación.
+- **Arreglo:** `$ west build -p always -b native_sim etapas/e01-app-layout/`
+- **Método para la próxima vez:** usar siempre `-p always` al cambiar de app o de target, o un `--build-dir` distinto por etapa.
+
+### Particularidades de la placa
+- **Puerto USB:** `west flash` autoseleccionó `/dev/ttyACM0` (USB-Serial/JTAG), pero el monitor lo abrí en `/dev/ttyUSB0` y mostró los logs. Hay que determinar en 1.4 cuál es la consola real y por qué.
+- **Warning de arranque:** `SHA-256 comparison failed ... Attempting to boot anyway...`. La app arranca igual; no lo investigué en este micro-paso.
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** la estructura correcta del `CMakeLists.txt`
+- **Pendiente:** ninguno
+
 ## Defensa e00
 *Respondida el 2026-11-09, sin consultar documentación ni notas.*
 
