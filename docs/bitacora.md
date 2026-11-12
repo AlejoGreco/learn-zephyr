@@ -90,10 +90,56 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.2 — Configuracion de software .conf segun target (board)
+
+**Fecha:** 2026-11-11 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.2: Configs de software distintas segun board` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Crear 2 archivos `<board>.conf` dentro de `/boards` y configurar la misma opcion con valores distintos en cada target
+Checkpoint: el `build/zephyr/.config` resultante luego de la compilacion difiere en dicha opcion
+
+### Qué hice
+
+- Cree ambos archivos `boards/*.conf` con distinto valor de la misma opción `CONFIG_MAIN_STACK_SIZE`.
+- Compile para ambos targets con `-p always` y guardando el `build/zephyr/.config` generado en cada caso.
+- Finalmente ejecute el comando `$ diff` entre ambos archivos y busque el valor de la opcion en la salida de la consola.
+
+Archivos tocados: `etapas/e01-app-layout/boards/`
+
+### Resultado
+Se observo la diferencia esperada con los 2 valores configurados dentro de `boards/*.conf`
+
+> Se observan mas diferencias en el diff debido a que ambas boards tienen **distinta arquitectura** y por lo tanto su kconfig base es distinto
+
+```bash
+$ diff docs/evidencias/e01/native.conf docs/evidencias/e01/esp32s3.conf
+
+...
+...
+38c34
+< CONFIG_MAIN_STACK_SIZE=2048
+---
+> CONFIG_MAIN_STACK_SIZE=1024
+45,46c41,42
+...
+...
+```
+
+### Evidencia
+- [01.2-boards-conf.md](evidencias/e01/01.2-boards-conf.md) — el entregable
+- [native.conf](evidencias/e01/native.conf) — config resultante luego del merge para native_sim
+- [esp32s3.conf](evidencias/e01/esp32s3.conf) — config resultante luego del merge para esp32s3
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Donde buscar el resultado luego de la compilacion de la configuracion de software `build/zephyr/.config`.
+- **Pendiente:** ninguno
+
 ## e01.1 — Construir app desde cero
 
 **Fecha:** 2026-11-10 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.1: app layout desde cero` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.1: app layout desde cero` (572a68e)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
@@ -126,7 +172,7 @@ Archivos tocados: `etapas/e01-app-layout/`
 Se observo el saludo en la consola para ambas placas, por lo que se pudo comprobar el correcto funcionamiento del `CMakeLists.txt` y `prj.conf`
 
 ### Evidencia
-- [01.1-crear-app.md](/docs/evidencias/e01/01.1-crear-app.md) — el entregable
+- [01.1-crear-app.md](evidencias/e01/01.1-crear-app.md) — el entregable
 
 ### Problemas y diagnóstico
 - **Síntoma:** `west build` se negó a compilar:
