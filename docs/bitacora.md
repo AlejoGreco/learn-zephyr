@@ -90,6 +90,82 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.3 — Configuracion de software orden de precedencia en .conf
+
+**Fecha:** 2026-11-12 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.3: Precedencia prj.conf vs boards/<board>.conf` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Encontrar el valor resultante de la opcion configurada en la config final `build/zephyr/.config` en cada target.
+Checkpoint: definir el orden de precedencia de la configuracion
+
+### Qué hice
+
+- Agregué una nueva entrada en la config de software del proyecto `prj.conf` con distinto valor de la misma opción `CONFIG_MAIN_STACK_SIZE=3072`. Quiero ver cuál prevalece
+- Compilé para ambos targets con `-p always` 
+- Finalmente ejecuté el comando `$ grep -E "^(CONFIG_MAIN_STACK_SIZE=|# CONFIG_MAIN_STACK_SIZE is not set)" build/zephyr/.config` para ver el valor post-merge. 
+
+El sistema de compilación de Zephyr resuelve las variables de Kconfig evaluándolas en el siguiente orden estricto de menor a mayor prioridad (donde cada capa posterior sobrescribe las anteriores)
+
+1. Defaults del árbol Kconfig `(Kconfig / Kconfig.defconfig base)` [ Nivel 1: Menor prioridad ] 
+2. defconfig de la placa `(boards/.../<BOARD>_defconfig)`
+3. `prj.conf` (Configuración global de la aplicación)
+4. `boards/<BOARD>.conf` (Configuración específica por placa en la app) [ Nivel 4: Mayor prioridad ]
+
+*Se pudo obtener el orden de precedencia del log de west durante la compilación*
+
+Archivos tocados: `etapas/e01-app-layout/prj.conf`
+
+### Resultado
+
+Se observó coincidencia con el presupuesto teorico y pudimos comprobar: 
+
+1- **Config global del proyecto `prj.conf` pisa a `Kconfig` base y `boards/.../<BOARD>_defconfig` de la placa**
+2- **Config de la placa del proyecto `boards/<board>.conf` pisa a config global del proyecto `prj.conf` y por ende a los otros 2 archivos de configuracion**
+
+*El orden entre `kconfig` y `<board>_defconfig` no se comprueba aqui, ya que escapa los objetivos de este micropaso*
+
+```bash
+# Resultado native_sim
+$ grep -E "^(CONFIG_MAIN_STACK_SIZE=|# CONFIG_MAIN_STACK_SIZE is not set)" build/zephyr/.config
+CONFIG_MAIN_STACK_SIZE=2048
+
+# Resultado esp32s3
+$ grep -E "^(CONFIG_MAIN_STACK_SIZE=|# CONFIG_MAIN_STACK_SIZE is not set)" build/zephyr/.config
+CONFIG_MAIN_STACK_SIZE=1024
+
+# Resultado para prj.conf (sin conf por board)
+$ grep -E "^(CONFIG_MAIN_STACK_SIZE=|# CONFIG_MAIN_STACK_SIZE is not set)" build/zephyr/.config
+CONFIG_MAIN_STACK_SIZE=3072
+```
+
+> También se puede observar desde el log de west durante la compilación
+
+```bash
+# Ejemplo native_sim
+Parsing /home/uki/zephyrproject/zephyr/Kconfig
+Loaded configuration '/home/uki/zephyrproject/zephyr/boards/native/native_sim/native_sim_defconfig' # kconfig placa soportada por zephyr
+Merged configuration '/home/uki/Documentos/codigos/learn-zephyr/etapas/e01-app-layout/prj.conf' # kconfig general del proyecto
+Merged configuration '/home/uki/Documentos/codigos/learn-zephyr/etapas/e01-app-layout/boards/native_sim.conf' # kconfig de la placa dentro del proyecto
+Configuration saved to '/home/uki/Documentos/codigos/learn-zephyr/build/zephyr/.config' # Resultado
+Kconfig header saved to '/home/uki/Documentos/codigos/learn-zephyr/build/zephyr/include/generated/zephyr/autoconf.h'
+
+# Ejemplo native_sim sin boards/
+Parsing /home/uki/zephyrproject/zephyr/Kconfig
+Loaded configuration '/home/uki/zephyrproject/zephyr/boards/native/native_sim/native_sim_defconfig'
+Merged configuration '/home/uki/Documentos/codigos/learn-zephyr/etapas/e01-app-layout/prj.conf'
+Configuration saved to '/home/uki/Documentos/codigos/learn-zephyr/build/zephyr/.config'
+Kconfig header saved to '/home/uki/Documentos/codigos/learn-zephyr/build/zephyr/include/generated/zephyr/autoconf.h'
+```
+
+### Evidencia
+- [01.3-conf-precedencia.md](evidencias/e01/01.3-conf-precedencia.md) — el entregable
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** como se aplican las diferentes partes de la config de software (`kconfig`) y como buscar simbolos en el kconfig final con `grep`.
+- **Pendiente:** ninguno
+
 ## e01.2 — Configuracion de software .conf segun target (board)
 
 **Fecha:** 2026-11-11 · **Sesiones:** 1 · **Target:** ambos
