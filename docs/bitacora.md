@@ -90,10 +90,83 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.5 — Reportes de memoria ROM/RAM en ambos targets
+
+**Fecha:** 2026-11-15 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.5: Reportes rom_report y ram_report en ambos targets` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Correr `west build -t rom_report` y `-t ram_report` en los dos targets e interpretar qué componente ocupa más.
+Checkpoint: saber leer el árbol del reporte y decir qué parte de la memoria es de la app y cuál es del SoC/HAL.
+
+### Qué hice
+- Corrí `rom_report` y `ram_report` sobre `esp32s3_devkitc/esp32s3/procpu` con el build ya configurado (`-t` es el target de CMake, la placa se elige con `-b`).
+- Repetí ambos reportes con `-b native_sim` (`-p always` en el primero para cambiar de placa).
+- Leí `build/rom.json` y `build/ram.json` para ordenar el árbol por tamaño, y para el RAM del ESP32-S3 revisé además `build/zephyr/zephyr_final.map` y `readelf -SW zephyr.elf`.
+
+```bash
+west build -t rom_report
+west build -t ram_report
+west build -p always -b native_sim -t rom_report ./etapas/e01-app-layout/
+west build -b native_sim -t ram_report ./etapas/e01-app-layout/
+```
+
+Archivos tocados: ninguno de la app (solo evidencia en `docs/evidencias/e01/`).
+
+### Resultado
+
+**ESP32-S3.** ROM total 58 292 B, repartido así:
+
+| Componente | Bytes | % |
+| --- | --- | --- |
+| HAL de Espressif (`WORKSPACE/modules/hal/espressif`) | 34 288 | 58.8 |
+| Zephyr propio (`ZEPHYR_BASE`) | 14 754 | 25.3 |
+| `(hidden)` | 6 998 | 12.0 |
+| `(no paths)` (incluye `__l_vfprintf`, 1 416 B) | 2 200 | 3.8 |
+
+Dentro del HAL: `esp_hw_support` 9 808 B, `spi_flash` 7 956 B, `esp_hal_mspi` 5 301 B. Dentro de Zephyr: `drivers` 6 812 B, `kernel` 3 363 B.
+
+RAM: el JSON suma 123 160 B, pero el 90.3 % es `(hidden)` (111 224 B), un nodo sin hijos. Lo que se pudo atribuir con nombre, confirmado en el `.map`:
+
+| Símbolo | Bytes |
+| --- | --- |
+| `kheap__system_heap` (`mempool.c`) | 4 164 |
+| `z_interrupt_stacks` (`init.c`, `ISR_STACK_SIZE=2048`) | 2 048 |
+| `z_main_stack` (`init.c`, `MAIN_STACK_SIZE=1024`) | 1 024 |
+| stack idle (`init.c`, `IDLE_STACK_SIZE=1024`) | 1 024 |
+
+Las secciones de datos del enlazador (`.dram0.data` + `.dram0.noinit` + `.dram0.bss`) suman unos 15.5 KB, que es la RAM real de la app. Del `(hidden)`, `.dram0.dummy` (22.5 KB) y el IRAM (~38 KB) explican unos 60 KB; **el resto no lo pude atribuir**.
+
+**native_sim.** ROM 10 642 B y RAM 5 557 B, con ~94 % y ~89 % en `(hidden)`. Lo único con nombre es `__udivmoddi4` (453 B), `native_sim` (125 B) y archivos de pocos bytes. El reporte no sirve para medir tamaño: la app es un ejecutable de Linux, sin regiones de flash/RAM, y el runtime del host no entra en el análisis.
+
+### Mediciones
+| Métrica | native_sim | ESP32-S3 | Método / comando |
+| --- | --- | --- | --- |
+| ROM (flash) | 10 642 B (no comparable) | 58 292 B | `west build -t rom_report` |
+| RAM | 5 557 B (no comparable) | 123 160 B en el JSON; ~15.5 KB en secciones de datos | `west build -t ram_report` |
+
+### Evidencia
+- [01.5-reports.md](evidencias/e01/01.5-reports.md) — salida completa de los cuatro reportes
+
+### Problemas y diagnóstico
+- **Síntoma:** en `native_sim` ambos reportes salen casi vacíos (`(hidden)` ~90 %). En el ESP32-S3, el RAM también tiene un `(hidden)` enorme.
+- **Hipótesis descartadas:** que fuera un error de mi build. Los nodos con nombre coinciden con el `.map` en el ESP32-S3, así que el reporte está bien armado.
+- **Causa raíz:** en `native_sim` no hay imagen de firmware; en el ESP32-S3, el origen de los 111 KB de `(hidden)` queda sin verificar (hay relleno `.dram0.dummy` y código en IRAM, pero no cubre todo).
+- **Arreglo:** no hay arreglo; el método es usar una placa con firmware real y cruzar con el `.map`.
+- **Método para la próxima vez:** nunca leer el total del reporte; mirar los nodos con nombre de archivo y verificarlos en `zephyr_final.map`.
+
+### Particularidades de la placa
+- El RAM total del reporte del ESP32-S3 incluye IRAM y relleno del enlazador, por eso no es el consumo real de la app.
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** `-t` es el target de CMake y la placa va con `-b`. Los reportes se leen de arriba hacia abajo por componente, y `native_sim` no sirve para medir memoria.
+- **Pendiente:** el ROM del reporte (58 292 B) no coincide con el `FLASH` de la tabla del build (135 028 B en 01.4); no sé aún por qué. Tampoco sé qué contiene el `(hidden)` de 111 KB del RAM.
+
 ## e01.4 — Consola del sistema en device tree
 
 **Fecha:** 2026-11-14 · **Sesiones:** 1 · **Target:** esp32s3
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.4: Identificado la consola del sistema en dts final` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.4: Identificado la consola del sistema en dts final` (a2022e1)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
