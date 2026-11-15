@@ -90,6 +90,52 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.4 — Consola del sistema en device tree
+
+**Fecha:** 2026-11-14 · **Sesiones:** 1 · **Target:** esp32s3
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.4: Identificado la consola del sistema en dts final` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Encontrar el nodo chosen en el device tree final `build/zephyr/zephyr.dts` e identificar cual es la consola del sistema
+Checkpoint: sabés qué periférico y qué puerto USB estás usando para ver los logs.
+
+### Qué hice
+
+Compile nuevamente la aplicacion para el target `esp32s3_devkitc_procpu` y utilice `grep` para buscar el nodo chosen en el device tree final resultante del build.
+Con eso pude ver todo el contenido del nodo chosen, que es utilizado para mapear caracteristicas del sistema con un periferico especifico, que cumplira una labor global en el sistema (no es un nodo de hardware ordinario)
+
+```bash
+$ grep -A 10 "chosen {" build/zephyr/zephyr.dts
+    chosen {
+        zephyr,canbus = &twai;                    /* in zephyr/dts/xtensa/espressif/esp32s3/esp32s3_common.dtsi:22 */
+        zephyr,entropy = &trng0;                  /* in zephyr/dts/xtensa/espressif/esp32s3/esp32s3_common.dtsi:23 */
+        zephyr,flash-controller = &flash;         /* in zephyr/dts/xtensa/espressif/esp32s3/esp32s3_common.dtsi:24 */
+        zephyr,sram = &sram1;                     /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:26 */
+        zephyr,console = &uart0;                  /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:27 */
+        zephyr,shell-uart = &uart0;               /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:28 */
+        zephyr,flash = &flash0;                   /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:29 */
+        zephyr,code-partition = &slot0_partition; /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:30 */
+        zephyr,bt-hci = &esp32_bt_hci;            /* in zephyr/boards/espressif/esp32s3_devkitc/esp32s3_devkitc_procpu.dts:31 */
+    };
+```
+
+### Resultado
+
+Se encontro que los nodos `zephyr,console` y `zephyr,shell-uart` utilizan ambos la `uart0` del micro que esta fisicamente mapeado con el bridge UART/USB en la placa, y que el puerto nativo es el que Zephyr tiene mapeado al OTG. El bloque Serial/JTAG está deshabilitado en el DT de esta board.
+
+```bash
+    zephyr,console = &uart0;
+    zephyr,shell-uart = &uart0;
+```
+
+### Evidencia
+- [01.4-consola-dts.md](evidencias/e01/01.4-consola-dts.md) — el entregable
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** los nodos standar del sistema tienen el prefijo `zephyr,` y se concentran dentro de `chosen`.
+- **Pendiente:** con usb_otg activo, ¿sigue funcionando el JTAG del puerto nativo?
+
 ## e01.3 — Configuracion de software orden de precedencia en .conf
 
 **Fecha:** 2026-11-12 · **Sesiones:** 1 · **Target:** ambos
