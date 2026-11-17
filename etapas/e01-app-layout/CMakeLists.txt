@@ -7,3 +7,4 @@ project(e01_app_layout)
 target_include_directories(app PRIVATE include)
 
 target_sources(app PRIVATE src/main.c src/saludos.c)
+target_sources_ifdef(CONFIG_FEATURE_CONDITIONAL app PRIVATE src/feat_conditional.c)

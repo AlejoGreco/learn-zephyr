@@ -90,10 +90,71 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e01.6 — Compilacion condicional
+
+**Fecha:** 2026-11-16 · **Sesiones:** 1 · **Target:** ambos
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.6: Archivo fuente condicional segun opcion Kconfig` (pendiente)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Compilar condicionalmente un fuente para que se incluya o no en el binario final
+Checkpoint: ver aparecer y desaparecer el modulo en el rom_report segun si la opcion de configuracion esta activa o no.
+
+### Qué hice
+- Cree un fuente y su correspondiente cabecera `feat_conditional.c` y `feat_conditional.h`
+- Cree un archivo nuevo `Kconfig` en la raiz de la app con una opcion nueva desactivada por default `FEATURE_CONDITIONAL`
+- Agregue en el `CMakeLists.txt` la compilacion condicionada a la opcion anterior con `target_sources_ifdef(CONFIG_FEATURE_CONDITIONAL app PRIVATE src/feat_conditional.c)` (Kconfig agrega el prefijo `CONFIG_` al simbolo `FEATURE_CONDITIONAL`; el nombre completo lo escribo yo explicitamente en CMake)
+- En `main.c` incluyo y llamo a la funcion del modulo condicional solo si la macro correspondiente esta definida `#ifdef CONFIG_FEATURE_CONDITIONAL`. Esta macro es generada automaticamente en `autoconf.h` por zephyr
+- Compile 2 veces, una usando `-- -DCONFIG_FEATURE_CONDITIONAL=y` y otra sin nada con `west` y genere en ambos casos el `rom_report`
+
+```bash
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e01-app-layout/ -- -DCONFIG_FEATURE_CONDITIONAL=y
+$ west build -t rom_report
+
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e01-app-layout/
+$ west build -t rom_report
+```
+
+Archivos tocados: `etapas/e01-app-layout/include/feat_conditional.h`, `etapas/e01-app-layout/src/feat_conditional.c`, `etapas/e01-app-layout/src/main.c`, `etapas/e01-app-layout/Kconfig`
+
+### Resultado
+
+Se pudo encontrar en la rama `src` que aparecio en un build y desaparecio en el otro segun la `CONFIG`
+
+```bash
+── /                                                                                              67   0.11%  - 
+│   └── home                                                                                       67   0.11%  - 
+│       └── uki                                                                                    67   0.11%  - 
+│           ├── Documentos                                                                         47   0.08%  - 
+│           │   └── codigos                                                                        47   0.08%  - 
+│           │       └── learn-zephyr                                                               47   0.08%  - 
+│           │           └── etapas                                                                 47   0.08%  - 
+│           │               └── e01-app-layout                                                     47   0.08%  - 
+│           │                   └── src                                                            47   0.08%  - 
+│           │                       ├── feat_conditional.c                                         14   0.02%  - 
+│           │                       │   └── feature_conditional                                    14   0.02%  0x4200036c .text
+│           │                       ├── main.c                                                     19   0.03%  - 
+│           │                       │   └── main                                                   19   0.03%  0x42000348 .text
+│           │                       └── saludos.c                                                  14   0.02%  - 
+│           │                           └── saludo_base                                            14   0.02%  0x4200035c .text
+
+```
+
+### Evidencia
+- [01.6-compilacion-condicional.md](evidencias/e01/01.6-compilacion-condicional.md) — salida completa de las compilaciones + fragmento del `rom_report` 
+
+### Particularidades de la placa
+- Dado que se demostro en el micropaso anterior que el reporte no funciona con `native_sim`, el `rom_report` solo se realizo para la placa real `esp32s3` (FLASH: 135060 B con la opcion en `y` vs 135028 B en `n`, +32 B)
+- Por la regla de los dos targets, verifique tambien `native_sim`: compila sin warnings con la opcion en `y` y en `n`; con `y` el `.config` tiene `CONFIG_FEATURE_CONDITIONAL=y` y se imprime "Feature conditional is enabled!", con `n` no se imprime
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Crear opcion de `Kconfig` e inyectarla como parametro en la compilacion con west. Ademas se podria usar los archivos `prj.conf` o `boards/*.conf` para habilitarla de forma permanente
+- **Pendiente:** ninguno
+
 ## e01.5 — Reportes de memoria ROM/RAM en ambos targets
 
 **Fecha:** 2026-11-15 · **Sesiones:** 1 · **Target:** ambos
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.5: Reportes rom_report y ram_report en ambos targets` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e01.5: Reportes rom_report y ram_report en ambos targets` (ada19ef)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo
