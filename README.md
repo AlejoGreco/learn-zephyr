@@ -295,7 +295,7 @@ Copiala a tu `README.md`. La columna **Requiere** te dice qué podés empezar ho
 | # | Etapa | Carril | Requiere | Dónde | Estado |
 | --- | --- | --- | --- | --- | --- |
 | 0 | Entorno, west y toolchain | tronco | — | ambos | ✅ |
-| 1 | Anatomía de la app y build system | tronco | E0 | ambos | ⬜ |
+| 1 | Anatomía de la app y build system | tronco | E0 | ambos | ✅ |
 | 2 | Kconfig | tronco | E1 | ambos | ⬜ |
 | 3 | Devicetree | tronco | E1 | ambos | ⬜ |
 | 4 | Modelo de drivers y GPIO | H | E3 | ESP32-S3 | ⬜ |
@@ -419,10 +419,10 @@ generado y las cifras de ROM/RAM de los dos targets.
 
 ### Criterios de aceptación
 
-- [ ] Los dos targets compilan con `-p always` y sus `.config` difieren en lo esperado.
-- [ ] Podés explicar por qué ganó el valor que ganó en `.config`.
-- [ ] `CMakeLists.txt` no lista fuentes con `GLOB`.
-- [ ] Sabés cuál de los dos puertos USB de tu placa es la consola, y por qué.
+- [x] Los dos targets compilan con `-p always` y sus `.config` difieren en lo esperado.
+- [x] Podés explicar por qué ganó el valor que ganó en `.config`.
+- [x] `CMakeLists.txt` no lista fuentes con `GLOB`.
+- [x] Sabés cuál de los dos puertos USB de tu placa es la consola, y por qué.
 
 ### Defensa
 

@@ -90,6 +90,37 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## Defensa e01
+*Respondida el 2026-11-20, sin consultar documentación ni notas.*
+
+**1. ¿En qué orden se mergean `prj.conf`, `boards/<target>.conf` y los defaults de la board?**
+
+Respuesta: El orden es similar al del log de compilacion de `west`. Default de la placa -> `prj.conf` -> `boards/<placa>.conf`
+Donde la fuente de la izquierda es pisada por la de la derecha. El default de la placa esta compuesta por kconfig del kernel y librerias de zephyr y _defconfig de las placas provistas por el fabricante (tambien con orden de superposicion de izquiera a derecha).
+
+**2. ¿Por qué `zephyr.dts` no es igual al `.dts` de la board?**
+
+Respuesta: porque zephyr.dts es el devicetree final resultante de la fusion de los dts del board, los dtsi del soc y la arquitectura, y los overlays de la aplicacion. El .dts de la board es la especificacion de hardware tal como viene de fabrica 
+
+**3. ¿Qué diferencia hay entre poner `CONFIG_X=y` en `prj.conf` y pasarlo como `-DCONFIG_X=y`?**
+
+Respuesta: Pasarlo por linea de comando va directo a la cache de cmake y tiene mayor prioridad en la cadena de generacion/fusion de kconfig.
+Por otro lado, no queda versionado ya que se aloja en el build de cmake, mientras que en el prj.conf forma parte del codigo fuente del proyecto.
+Es importante aclarar que pasar una variable por línea de comandos `-DCONFIG_X=y` **no fuerza la opción mágicamente ignorando las reglas de Kconfig**:
+
+* Kconfig procesa la petición y valida sus dependencias.
+* Si `CONFIG_X` requiere de otra opción que no está activa, o si depende de un nodo de hardware que está desactivado en el Devicetree (`status = "disabled";`), Kconfig emitirá un aviso (*warning*) durante la fase de configuración de CMake y **descartará el valor solicitado**,
+
+#### Autoevaluación
+| Pregunta | ¿Respondida correctamente? | Qué me faltó |
+| --- | --- | --- |
+| 1 | parcial | Distinguir los `default` de los símbolos en `Kconfig`/`Kconfig.defconfig` de board y SoC del `<board>_defconfig`, y que este último lo mantiene el proyecto Zephyr, no el fabricante. |
+| 2 | sí | |
+| 3 | sí | |
+
+**Resultado:** ✅ aprobada (2 sí + 1 parcial)
+**Dudas que quedaron:** Diferencias entre `_defconfig` y `Kconfig.defconfig`
+
 ## e01.6 — Compilacion condicional
 
 **Fecha:** 2026-11-16 · **Sesiones:** 1 · **Target:** ambos
