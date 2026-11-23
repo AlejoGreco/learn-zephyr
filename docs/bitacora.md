@@ -90,6 +90,55 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e02.1 — Navegar menuconfig y buscar opciones conocidas
+
+**Fecha:** 2026-11-22 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e02.1: Búsqueda de opciones con menuconfig` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Navegar `west build -t menuconfig` y encontrar tres opciones que ya venías usando; leer su ayuda y sus dependencias.
+Checkpoint: sabés usar la búsqueda del menuconfig.
+
+### Lectura dirigida
+- **Qué problema resuelve:** En lugar de compilar un kernel gigantesco y genérico, Zephyr utiliza Kconfig para incluir únicamente las librerías, drivers y componentes del sistema operativo que tu aplicación necesita explícitamente. Todo aquello que no habilites es **eliminado en tiempo de compilación**
+- **APIs / opciones centrales (2–3):**
+    - `$ west build -b <BOARD> -t menuconfig` CLI de búsqueda de opciones de Kconfig
+    - `Depends on: CONFIG_MY_FEAT` Genera una dependencia de una opción respecto de otra
+    - `default` valor por defecto de la opción si no se le asigna valor
+- **Limitación que menciona la doc:** Falla en activar ciertas configuraciones: una asignación en `prj.conf` no es una orden imperativa, sino una
+    **petición de configuración**. Kconfig evalúa una estructura de árbol con reglas de dependencia (`depends on`). Si las dependencias previas de una opción **no están satisfechas**, Kconfig descartará silenciosamente la asignación y quedará el valor por default
+- **Fuentes leídas:**
+    - [Kconfig — Configuration System](https://docs.zephyrproject.org/latest/build/kconfig/index.html)
+    - [Kconfig Tips and Best Practices](https://docs.zephyrproject.org/latest/build/kconfig/tips.html)
+
+### Qué hice
+- Compilé el proyecto normalmente para la placa de trabajo y luego el target menuconfig.
+- Busqué con /NOMBRE_DE_OPCION + ?. En menuconfig se busca con /, y ? muestra la ayuda de un ítem.
+
+```bash
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig/
+$ west build -t menuconfig
+```
+
+Archivos tocados: `etapas/e02-kconfig/*`
+
+### Resultado
+
+| Opción | Valor efectivo | Depende de | Define |
+| --- | --- | --- | --- |
+| `CONFIG_MAIN_STACK_SIZE` | 3072 (`prj.conf`) | ninguna | kernel/Kconfig:140 |
+| `CONFIG_PRINTK` | y | ninguna | subsys/debug/Kconfig:152 |
+| `CONFIG_FEATURE_CONDITIONAL` | n | ninguna | etapas/e02-kconfig/Kconfig:1 |
+
+### Evidencia
+- `docs/evidencias/e02/02.1-menuconfig.md` — capturas/salida de las 3 opciones con su ayuda y dependencias
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Uso de menuconfig, barra de búsqueda, acceso a info y lectura de su salida
+- **Pendiente:** Visualizar una opción con dependencias (`depends on` no vacío)
+- **Resuelto:** `MAIN_STACK_SIZE` se define una sola vez (`kernel/Kconfig:140`, con prompt); SoCs, placas y arquitecturas solo agregan `default` condicionales sin prompt. Se usa el primero cuya condición se cumple: en ESP32-S3 es 4096 (`soc/espressif/esp32s3/Kconfig.defconfig:16`), y `prj.conf` lo sobrescribe a 3072.
+
 ## Defensa e01
 *Respondida el 2026-11-20, sin consultar documentación ni notas.*
 
