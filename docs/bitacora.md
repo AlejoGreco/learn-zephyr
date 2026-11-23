@@ -90,6 +90,75 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e02.2 — Mi Kconfig y opcion de configuracion en menuconfig
+
+**Fecha:** 2026-11-23 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e02.2: Kconfig y mi propia opcion de configuracion` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Creá un `Kconfig` en tu app con un `bool` que habilita una feature
+Checkpoint: la opción aparece en menuconfig bajo tu menú.
+
+### Qué hice
+- Modifique el archivo `Kconfig` en la raiz de la app que traia de la e01.6 y le agregue a `FEATURE_CONDITIONAL` una dependencia y la linea de ayuda
+- `depends on PRINTK` porque la unica funcion del modulo lo utiliza
+- `help` Que explica la razon de ser de esta nueva opcion
+- Finalmente para crear la entrada en el menu use `menu "Mi aplicacion"` y envolvi toda la declaracion con un `endmenu` al final (si no aparecia en el top menu de menuconfig)
+
+```bash
+$ west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig/
+$ west build -t menuconfig
+$ west build -t rom_report
+```
+
+Archivos tocados: `etapas/e02-kconfig/prj.conf`, `etapas/e02-kconfig/Kconfig`
+
+### Resultado
+
+Opcion visible en menuconfig y modulo activado desde `prj.conf` con `CONFIG_FEATURE_CONDITIONAL=y`
+
+```text
+    Mi aplicacion  --->
+    Devicetree Info  ----
+    Modules  --->
+    Board Options  --->
+    Hardware Configuration  --->
+    XTENSA Options  --->
+    General Architecture Options  --->
+[ ] Support code/data section relocation
+...
+
+```
+
+Salida de `rom_report` para comprobar la inclusion en el arbol de compilacion del modulo activado por la opcion `CONFIG_FEATURE_CONDITIONAL`
+
+```bash
+├── /                                                                                              67   0.11%  - 
+│   └── home                                                                                       67   0.11%  - 
+│       └── uki                                                                                    67   0.11%  - 
+│           ├── Documentos                                                                         47   0.08%  - 
+│           │   └── codigos                                                                        47   0.08%  - 
+│           │       └── learn-zephyr                                                               47   0.08%  - 
+│           │           └── etapas                                                                 47   0.08%  - 
+│           │               └── e02-kconfig                                                        47   0.08%  - 
+│           │                   └── src                                                            47   0.08%  - 
+│           │                       ├── feat_conditional.c                                         14   0.02%  - 
+│           │                       │   └── feature_conditional                                    14   0.02%  0x4200036c .text
+│           │                       ├── main.c                                                     19   0.03%  - 
+│           │                       │   └── main                                                   19   0.03%  0x42000348 .text
+│           │                       └── saludos.c                                                  14   0.02%  - 
+│           │                           └── saludo_base                                            14   0.02%  0x4200035c .text
+│           └── zephyr-sdk-1.0.1                            
+```
+
+### Evidencia
+- [02.2-custom-kconfig.md](evidencias/e02/02.2-custom-kconfig.md) — salida completa de info de menuconfig + vista de opciones
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** Aprendi a hacer mi propia entrada en las opciones de menuconfig y activar o desactivar el modulo desde el CLI 
+- **Pendiente:** ninguno
+
 ## e02.1 — Navegar menuconfig y buscar opciones conocidas
 
 **Fecha:** 2026-11-22 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu

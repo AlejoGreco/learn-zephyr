@@ -1,5 +1,13 @@
+menu "Mi aplicacion"
+
 config FEATURE_CONDITIONAL
     bool "Habilitar feature condicional"
     default n
+    depends on PRINTK
+    help
+        Mensaje por consola para comprobar la correcta activacion del modulo.
+        Tiene solo fines didacticos, para familiarizacion de .conf y Kconfig
+
+endmenu
 
 source "Kconfig.zephyr"
