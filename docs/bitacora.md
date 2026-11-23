@@ -90,10 +90,64 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e02.3 — `choice` de velocidad y `range` de timeout en Kconfig
+
+**Fecha:** 2026-11-23 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e02.3: choice de velocidad y range de timeout` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Agregar a mi `Kconfig` un `choice` de velocidad de comunicación y un `int` con `range` para el timeout, ambos dependientes de `FEATURE_CONDITIONAL`.
+Checkpoint: las opciones aparecen en menuconfig solo con el módulo activo, el valor llega a `build/zephyr/.config` y un valor fuera de rango es rechazado.
+
+### Qué hice
+- Agregué en `etapas/e02-kconfig/Kconfig` un `choice FEATURE_CONDITIONAL_SPEED_COMM` con tres opciones (9600, 115200, 921600 baud), con `depends on FEATURE_CONDITIONAL` y `default FEATURE_CONDITIONAL_9600_BAUD`.
+- Agregué `FEATURE_CONDITIONAL_TIMEOUT` (`int`, `range 50 1000`, `default 100`, `depends on FEATURE_CONDITIONAL`).
+- Seleccioné en `prj.conf` el baudrate con `CONFIG_FEATURE_CONDITIONAL_115200_BAUD=y` y fijé `CONFIG_FEATURE_CONDITIONAL_TIMEOUT=200`.
+- Verifiqué en `menuconfig` con el módulo en `y` y en `n`, y en `build/zephyr/.config` con `grep`.
+- Probé un valor fuera de rango (`CONFIG_FEATURE_CONDITIONAL_TIMEOUT=2000`) para ver cómo reacciona Kconfig.
+
+```bash
+$ west build -t menuconfig
+$ grep -E "FEATURE_CONDITIONAL" build/zephyr/.config
+```
+
+Archivos tocados: `etapas/e02-kconfig/Kconfig`, `etapas/e02-kconfig/prj.conf`
+
+### Resultado
+Con `FEATURE_CONDITIONAL=y` aparecen el choice (115200 baud) y el timeout (200). Con `n` desaparecen ambos, lo que confirma el `depends on`.
+
+```text
+CONFIG_FEATURE_CONDITIONAL=y
+# CONFIG_FEATURE_CONDITIONAL_9600_BAUD is not set
+CONFIG_FEATURE_CONDITIONAL_115200_BAUD=y
+# CONFIG_FEATURE_CONDITIONAL_921600_BAUD is not set
+CONFIG_FEATURE_CONDITIONAL_BAUDRATE=115200
+CONFIG_FEATURE_CONDITIONAL_TIMEOUT=200
+```
+
+Con `TIMEOUT=2000` Kconfig descartó el valor, volvió al default (100) y **abortó la configuración**: "ignored due to being outside the active range ([50, 1000]) -- falling back on defaults" y "Aborting due to Kconfig warnings". menuconfig también rechaza ese valor al editarlo.
+
+### Evidencia
+- [02.3-choice-range.md](evidencias/e02/02.3-choice-range.md) — capturas de menuconfig con el módulo en `y`/`n`, `.config` resultante y log del error de rango
+
+### Problemas y diagnóstico
+- **Síntoma:** `west build -t menuconfig` falló al parsear el `Kconfig`:
+  `Kconfig:23: error: couldn't parse 'value 9600': syntax error`
+- **Hipótesis descartadas:** ninguna probada; el mensaje apuntaba directo a la línea.
+- **Causa raíz:** dos errores de modelo. (1) `value` no es una palabra clave de Kconfig. (2) Un `choice` solo admite símbolos `bool` (o `tristate`), no `int`, así que no se puede elegir un número directamente.
+- **Arreglo:** las tres opciones del choice pasaron a `bool`, y agregué un `int` sin prompt, `FEATURE_CONDITIONAL_BAUDRATE`, que traduce la opción elegida a un número con `default 9600 if ...`, `default 115200 if ...`, etc. También saqué `optional` del choice, porque con un `default` definido no tenía sentido.
+- **Segundo error (en `prj.conf`):** había escrito `CONFIG_FEATURE_CONDITIONAL_SPEED_COMM=FEATURE_CONDITIONAL_115200_BAUD`. Un choice no se asigna por su nombre: se activa la opción elegida con `CONFIG_FEATURE_CONDITIONAL_115200_BAUD=y`.
+- **Método para la próxima vez:** ante un error de parseo de Kconfig, ir a la línea que indica el mensaje y revisar que cada palabra sea una palabra clave válida (`bool`, `int`, `default`, `depends on`, `range`, `help`, `choice`...).
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** un `choice` selecciona entre símbolos `bool`; para obtener un valor numérico a partir de la elección se usa un `int` auxiliar con `default <valor> if <opción>`. Un valor fuera de `range` no se aplica en silencio: en Zephyr es un warning que aborta la configuración.
+- **Pendiente:** el código C todavía no consume `CONFIG_FEATURE_CONDITIONAL_BAUDRATE` ni `CONFIG_FEATURE_CONDITIONAL_TIMEOUT`; `feature_conditional()` solo imprime un mensaje fijo. Falta agregar un `printk` con ambos valores y comprobar la salida por consola con otra combinación (p. ej. 921600 y timeout 500).
+
 ## e02.2 — Mi Kconfig y opcion de configuracion en menuconfig
 
 **Fecha:** 2026-11-23 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e02.2: Kconfig y mi propia opcion de configuracion` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 (`bc5d59d1b6657cfeef30124b818c8fbd69da68ac`) · **Commit:** `e02.2: Kconfig y mi propia opcion de configuracion` (77263d1)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo

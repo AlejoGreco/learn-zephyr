@@ -1,3 +1,5 @@
+mainmenu "Configuracion de la aplicacion e02_kconfig"
+
 menu "Mi aplicacion"
 
 config FEATURE_CONDITIONAL
@@ -7,6 +9,41 @@ config FEATURE_CONDITIONAL
     help
         Mensaje por consola para comprobar la correcta activacion del modulo.
         Tiene solo fines didacticos, para familiarizacion de .conf y Kconfig
+
+choice FEATURE_CONDITIONAL_SPEED_COMM
+    prompt "Velocidad de comunicacion de la feat_conditional"
+    depends on FEATURE_CONDITIONAL
+    default FEATURE_CONDITIONAL_9600_BAUD
+
+    help
+        Config de prueba para fines didacticos.
+        Simula velocidad de comunicacion UART  del modulo
+
+    config FEATURE_CONDITIONAL_9600_BAUD
+        bool "9600 baud"
+    
+    config FEATURE_CONDITIONAL_115200_BAUD
+        bool "115200 baud"
+    
+    config FEATURE_CONDITIONAL_921600_BAUD
+        bool "921600 baud"
+
+endchoice
+
+config FEATURE_CONDITIONAL_BAUDRATE
+    int
+    default 9600 if FEATURE_CONDITIONAL_9600_BAUD
+    default 115200 if FEATURE_CONDITIONAL_115200_BAUD
+    default 921600 if FEATURE_CONDITIONAL_921600_BAUD
+
+config FEATURE_CONDITIONAL_TIMEOUT
+    int "Tiempo de espera de la feat_conditional"
+    depends on FEATURE_CONDITIONAL
+    range 50 1000
+    default 100
+    help
+        Config de prueba para fines didacticos.
+        Simula tiempo de espera de la feat_conditional
 
 endmenu
 
