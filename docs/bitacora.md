@@ -90,6 +90,58 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e02.4 — Opciones Kconfig usadas desde C (`IS_ENABLED()` y `CONFIG_` numérico)
+
+**Fecha:** 2026-11-25 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e02.4: Usando Kconfig desde el codigo` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Usar mis opciones Kconfig en C con `IS_ENABLED()` y con valores numéricos `CONFIG_*`.
+Checkpoint: cambiar el valor cambia el comportamiento sin editar código.
+
+### Qué hice
+- `main.c`: reemplacé `#ifdef CONFIG_FEATURE_CONDITIONAL` por `if (IS_ENABLED(CONFIG_FEATURE_CONDITIONAL)) {...} else {...}`. El header `feat_conditional.h` se incluye siempre.
+- `feat_conditional.c`: nueva `feature_conditional_config()` que imprime `CONFIG_FEATURE_CONDITIONAL_BAUDRATE` y `CONFIG_FEATURE_CONDITIONAL_TIMEOUT`.
+- Tres corridas sin tocar el código entre una y otra, solo la configuración:
+
+```bash
+# 1. prj.conf: 115200 baud y timeout 200
+west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig
+# 2. valores inyectados por línea de comandos
+west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig -- -DCONFIG_FEATURE_CONDITIONAL_921600_BAUD=y -DCONFIG_FEATURE_CONDITIONAL_TIMEOUT=500
+# 3. módulo deshabilitado
+west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig -- -DCONFIG_FEATURE_CONDITIONAL=n
+# en cada una: west flash && west espressif monitor -p /dev/ttyUSB0
+```
+
+Archivos tocados: `etapas/e02-kconfig/src/main.c`, `etapas/e02-kconfig/src/feat_conditional.c`, `etapas/e02-kconfig/include/feat_conditional.h`
+
+### Resultado
+| Corrida | Config | Salida en monitor |
+| --- | --- | --- |
+| 1 | 115200 / 200 | `Feature Baudrate: 115200` / `Feature Timeout: 200` |
+| 2 | 921600 / 500 | `Feature Baudrate: 921600` / `Feature Timeout: 500` |
+| 3 | `FEATURE_CONDITIONAL=n` | `Feature conditional is disabled!` (rama `else`) |
+
+Con el mismo código, cambiar la configuración cambió el comportamiento del firmware.
+
+Con `=n` Kconfig emitió dos warnings: `FEATURE_CONDITIONAL_TIMEOUT was assigned the value '200' but got ''` y `choice symbol FEATURE_CONDITIONAL_115200_BAUD was selected (set =y), but no symbol ended up as the choice selection`. Ambos vienen de que `prj.conf` asigna símbolos cuya dependencia (`FEATURE_CONDITIONAL`) está en `n`. Son esperados en este escenario; se retoman en 2.6.
+
+### Mediciones
+| Métrica | ESP32-S3 | Método / comando |
+| --- | --- | --- |
+| FLASH, `FEATURE_CONDITIONAL=y` (115200 / 200) | 135108 B | tabla "Memory region" de `west build` |
+| FLASH, `FEATURE_CONDITIONAL=y` (921600 / 500) | 135108 B | idem |
+| FLASH, `FEATURE_CONDITIONAL=n` | 135060 B | idem |
+
+### Evidencia
+- `docs/evidencias/e02/02.4-kconf-options-from-code.md` — build, flash y monitor de las tres corridas, incluidos los warnings de la corrida con `=n`
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** `IS_ENABLED()` deja ambas ramas visibles para el compilador y elimina la que no aplica, a diferencia de `#ifdef`. Un `CONFIG_<int>` es una constante de compilación; para un `choice`, el `int` auxiliar traduce la elección a número. `-DFEATURE_X=y` sin `CONFIG_` es solo una variable de CMake: Zephyr traslada a Kconfig únicamente `CONFIG_*`, y el síntoma es el warning `Manually-specified variables were not used`.
+- **Pendiente:** 2.5 (`depends on` de un subsistema) y diagnóstico de opciones en `n` en 2.6.
+
 ## e02.3 — `choice` de velocidad y `range` de timeout en Kconfig
 
 **Fecha:** 2026-11-23 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
