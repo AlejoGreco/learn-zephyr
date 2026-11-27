@@ -90,10 +90,67 @@ Blobs de RF, `--reset-type watchdog-reset`, alias de LED/botón, puerto USB de c
 
 <!-- Pegá las entradas nuevas debajo de esta línea, la más reciente arriba. -->
 
+## e02.5 — Opción propia que depende de un símbolo del sistema (`depends on LOG`)
+
+**Fecha:** 2026-11-26 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b665 · **Commit:** `e02.5: depends on de un subsistema (LOG)` (-)
+**Estado:** ✅ checkpoint verificado
+
+### Objetivo
+Hacer que una opción mía dependa de un subsistema de Zephyr (`LOG`) y ver qué pasa cuando esa dependencia no se cumple.
+Checkpoint: con `LOG=n` la opción desaparece de menuconfig y queda en `n` en `.config`; con `LOG=y` se puede elegir y cambia la salida.
+
+### Qué hice
+- `Kconfig`: nueva `FEATURE_CONDITIONAL_USE_LOG` (`bool`, `default n`, `depends on FEATURE_CONDITIONAL && LOG`).
+- `feat_conditional.c`:
+  - con `CONFIG_FEATURE_CONDITIONAL_USE_LOG`, `LOG_MODULE_REGISTER(feat_conditional, LOG_LEVEL_INF)` y `log_with_log()` (formatea con `vsnprintk` en un buffer de 96 B y emite con `LOG_INF`);
+  - sin ella, `log_with_printk()` usa `vprintk`;
+  - un puntero a función `feature_conditional_logger` elige una de las dos, y `feature_conditional()` / `feature_conditional_config()` lo usan en vez de llamar a `printk`;
+  - el mensaje de `feature_conditional()` cambia según `IS_ENABLED(CONFIG_FEATURE_CONDITIONAL_USE_LOG)` ("with LOG!" / "with PRINTK!").
+- `prj.conf`: agregué `CONFIG_LOG=n` como base.
+- Tres corridas, cambiando solo `prj.conf`:
+
+```bash
+# 1. LOG=y, USE_LOG=y   2. LOG=y, USE_LOG=n   3. LOG=n
+west build -p always -b esp32s3_devkitc/esp32s3/procpu ./etapas/e02-kconfig
+grep -E "FEATURE_CONDITIONAL" build/zephyr/.config
+west flash && west espressif monitor -p /dev/ttyUSB0
+```
+
+Archivos tocados: `etapas/e02-kconfig/Kconfig`, `etapas/e02-kconfig/prj.conf`, `etapas/e02-kconfig/src/feat_conditional.c`
+
+### Resultado
+| Corrida | Config | `.config` | Salida en monitor |
+| --- | --- | --- | --- |
+| 1 | `LOG=y`, `USE_LOG=y` | `CONFIG_FEATURE_CONDITIONAL_USE_LOG=y` | `<inf> feat_conditional: Feature conditional is enabled with LOG!` (más Baudrate y Timeout, con timestamp) |
+| 2 | `LOG=y`, `USE_LOG=n` | `# CONFIG_FEATURE_CONDITIONAL_USE_LOG is not set` | `Feature conditional is enabled with PRINTK!` |
+| 3 | `LOG=n` | el símbolo no aparece | `Feature conditional is enabled with PRINTK!` |
+
+- En la corrida 3 la opción no se puede habilitar en menuconfig. En *Symbol information* figura `Value: n` y las dependencias directas `FEATURE_CONDITIONAL(=y) && LOG(=n)`.
+- En la corrida 1 los mensajes de log salen con una línea en blanco entre sí, porque el texto ya termina en `\n` y el subsistema de log agrega el suyo.
+
+### Mediciones
+| Métrica | ESP32-S3 | Método / comando |
+| --- | --- | --- |
+| FLASH, `LOG=y`, `USE_LOG=y` | 136308 B | tabla "Memory region" de `west build` |
+| FLASH, `LOG=y`, `USE_LOG=n` | 136276 B | idem |
+| FLASH, `LOG=n` | 135124 B | idem |
+| dram0_0_seg, `LOG=y` / `LOG=n` | 52176 B / 40720 B | idem (corridas 1 y 3) |
+
+Habilitar `LOG` cuesta ~1,1 KB de FLASH y ~11,4 KB de dram0 aunque ningún módulo lo use; usarlo desde `feat_conditional` suma solo 32 B más de FLASH.
+
+### Evidencia
+- `docs/evidencias/e02/02.5-system-dependency.md` — build, `.config`, flash y monitor de las tres corridas, y menuconfig con *Symbol information* de la corrida 3
+- `docs/evidencias/e02/02.5-logger-on.prj.conf`, `02.5-logger-off.prj.conf`, `02.5-logger-disabled.prj.conf` — `prj.conf` de cada corrida
+
+### Qué aprendí y pendiente
+- **Aprendizaje:** `depends on` también puede apuntar a símbolos de Zephyr, no solo a los míos. Si la dependencia está en `n`, mi opción queda oculta y vale `n`, sin error ni warning. La salida por consola no cambió en la corrida 3 porque el código cae al camino de `printk`. Habilitar un subsistema tiene costo de memoria aunque no se use.
+- **Pendiente:** En 2.6, diagnosticar opciones que quedan en `n` por dependencias.
+
 ## e02.4 — Opciones Kconfig usadas desde C (`IS_ENABLED()` y `CONFIG_` numérico)
 
 **Fecha:** 2026-11-25 · **Sesiones:** 1 · **Target:** esp32s3_devkitc/esp32s3/procpu
-**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e02.4: Usando Kconfig desde el codigo` (-)
+**Zephyr:** v4.5.0-rc3-10-gbc5d59d1b66 · **Commit:** `e02.4: Usando Kconfig desde el codigo` (aa0c206)
 **Estado:** ✅ checkpoint verificado
 
 ### Objetivo

@@ -45,6 +45,15 @@ config FEATURE_CONDITIONAL_TIMEOUT
         Config de prueba para fines didacticos.
         Simula tiempo de espera de la feat_conditional
 
+config FEATURE_CONDITIONAL_USE_LOG
+    bool "Usar subsistema de logging en feat_conditional"
+    depends on FEATURE_CONDITIONAL && LOG
+    default n
+    help
+        Config de prueba para fines didacticos.
+        Emite mensajes del modulo con LOG_INF en lugar de printk.
+        El subsistema puede condicionar la compilacion de modulos.
+
 endmenu
 
 source "Kconfig.zephyr"
